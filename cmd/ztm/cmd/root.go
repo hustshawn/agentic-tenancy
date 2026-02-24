@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/shawn/agentic-tenancy/internal/cli/api"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +42,32 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 }
 
+func initClient() api.Client {
+	// For now, always use kubectl client
+	// HTTP client can be added later when --orchestrator-url is provided
+	return api.NewKubectlClient(namespace, context)
+}
+
 func Execute() error {
+	// Wire up client for all commands
+	client := initClient()
+
+	// Replace nil clients with actual client
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Use == "tenant" {
+			cmd.ResetCommands()
+			for _, subcmd := range newTenantCmd(client).Commands() {
+				cmd.AddCommand(subcmd)
+			}
+		}
+		if cmd.Use == "webhook" {
+			cmd.ResetCommands()
+			for _, subcmd := range newWebhookCmd(client).Commands() {
+				cmd.AddCommand(subcmd)
+			}
+		}
+	}
+
 	return rootCmd.Execute()
 }
 
