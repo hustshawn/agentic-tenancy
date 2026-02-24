@@ -6,18 +6,41 @@ Day-to-day operations for managing the Agentic Tenancy platform.
 
 ## ztm CLI Reference
 
-`ztm` is a bash CLI that wraps the Orchestrator and Router APIs. It can call APIs directly via HTTP or through `kubectl exec` (no port-forward needed).
+`ztm` is a Go-based CLI for managing tenants. It uses `kubectl exec` by default to call orchestrator/router APIs in-cluster.
 
-### Environment Variables
+### Installation
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ZTM_ORCHESTRATOR_URL` | _(empty — uses kubectl exec)_ | Orchestrator HTTP base URL |
-| `ZTM_ROUTER_URL` | _(empty — uses kubectl exec)_ | Router public base URL |
-| `ZTM_NAMESPACE` | `tenants` | Kubernetes namespace |
-| `ZTM_KUBE_CONTEXT` | _(current context)_ | kubectl context override |
+```bash
+# Build from source
+make ztm
 
-### Commands
+# Install to PATH
+make install-ztm
+
+# Verify
+ztm version
+```
+
+### Global Flags
+
+Available on all commands:
+
+```
+--namespace string       Kubernetes namespace (default: tenants)
+--context string         kubectl context (default: current context)
+--orchestrator-url       Direct HTTP URL (bypasses kubectl)
+--router-url            Router public URL
+--output string         Output format: json|table (default: table)
+--no-color              Disable colored output
+```
+
+Environment variables:
+- `ZTM_NAMESPACE` - Kubernetes namespace
+- `ZTM_KUBE_CONTEXT` - kubectl context
+- `ZTM_ORCHESTRATOR_URL` - Orchestrator HTTP URL
+- `ZTM_ROUTER_URL` - Router public URL
+
+### Tenant Commands
 
 #### Create Tenant
 
@@ -25,29 +48,40 @@ Day-to-day operations for managing the Agentic Tenancy platform.
 ztm tenant create <id> <bot_token> [--idle-timeout <secs>]
 ```
 
-Creates a DynamoDB record and auto-registers the Telegram webhook (if `ROUTER_PUBLIC_URL` is configured on the orchestrator).
+Creates a DynamoDB record and auto-registers the Telegram webhook.
 
 ```bash
-# Example: create tenant with 1-hour idle timeout
+# Create with 1-hour idle timeout
 ztm tenant create alice 1234567890:AAHxyz --idle-timeout 3600
+
+# Default timeout (600s = 10min)
+ztm tenant create bob 9876543210:AABabc
 ```
 
 #### List Tenants
 
 ```bash
-ztm tenant list
+ztm tenant list [--output json]
 ```
 
-Returns all tenants with status, last_active_at, idle_timeout_s (BotToken redacted).
+Returns all tenants with status, last active time, and idle timeout.
+
+```bash
+ztm tenant list
+ztm tenant list --output json
+```
 
 #### Get Tenant
 
 ```bash
-ztm tenant get <id>
+ztm tenant get <id> [--output json]
 ```
+
+Shows detailed information for a single tenant.
 
 ```bash
 ztm tenant get alice
+ztm tenant get alice --output json
 ```
 
 #### Update Tenant
@@ -56,14 +90,17 @@ ztm tenant get alice
 ztm tenant update <id> [--bot-token <token>] [--idle-timeout <secs>]
 ```
 
-Updates one or both fields. If bot_token is changed, the Telegram webhook is re-registered automatically.
+Updates bot token and/or idle timeout. At least one flag required.
 
 ```bash
 # Update bot token
-ztm tenant update alice --bot-token 9876543210:AAHnew
+ztm tenant update alice --bot-token 1111:AAHnew
 
-# Update idle timeout to 30 minutes
+# Update idle timeout
 ztm tenant update alice --idle-timeout 1800
+
+# Update both
+ztm tenant update alice --bot-token 2222:AAH --idle-timeout 3600
 ```
 
 #### Delete Tenant
@@ -72,11 +109,13 @@ ztm tenant update alice --idle-timeout 1800
 ztm tenant delete <id>
 ```
 
-Deletes the DynamoDB record, pod (if running), PVC/PV, Redis cache entry, and Telegram webhook.
+Deletes the tenant, pod (if running), PVC/PV, Redis cache, and webhook.
 
 ```bash
 ztm tenant delete alice
 ```
+
+### Webhook Commands
 
 #### Register Webhook
 
@@ -84,11 +123,19 @@ ztm tenant delete alice
 ztm webhook register <id>
 ```
 
-Manually registers the Telegram webhook for a tenant. Normally not needed if `ROUTER_PUBLIC_URL` is set (auto-registered on create).
+Manually registers the Telegram webhook. Normally auto-registered on create.
 
 ```bash
 ztm webhook register alice
 ```
+
+---
+
+## Legacy Bash CLI
+
+The original bash-based `scripts/ztm.sh` is deprecated and will be removed in v1.0.0. Use the Go binary instead.
+
+Migration guide: [docs/cli-migration.md](docs/cli-migration.md)
 
 ---
 

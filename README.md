@@ -93,6 +93,53 @@ kubectl -n tenants logs deployment/router --tail=20
 
 ---
 
+### CLI Installation
+
+The `ztm` CLI is a Go binary that manages tenant operations. It requires `kubectl` and a valid kubeconfig.
+
+```bash
+# Build from source
+make ztm
+
+# Install to PATH
+make install-ztm
+
+# Verify installation
+ztm version
+```
+
+### Using the CLI
+
+```bash
+# Create a tenant
+ztm tenant create alice 1234567890:AAHxyz --idle-timeout 3600
+
+# List tenants
+ztm tenant list
+
+# Get tenant details
+ztm tenant get alice
+
+# Update tenant
+ztm tenant update alice --idle-timeout 1800
+
+# Register webhook
+ztm webhook register alice
+
+# Delete tenant
+ztm tenant delete alice
+
+# Use different cluster
+ztm tenant list --context prod-eks --namespace production
+
+# JSON output
+ztm tenant get alice --output json
+```
+
+See [docs/operations.md](docs/operations.md) for complete CLI reference.
+
+---
+
 ## Infrastructure Reference
 
 | Resource | Value |
