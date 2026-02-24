@@ -52,21 +52,9 @@ func Execute() error {
 	// Wire up client for all commands
 	client := initClient()
 
-	// Replace nil clients with actual client
-	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == "tenant" {
-			cmd.ResetCommands()
-			for _, subcmd := range newTenantCmd(client).Commands() {
-				cmd.AddCommand(subcmd)
-			}
-		}
-		if cmd.Use == "webhook" {
-			cmd.ResetCommands()
-			for _, subcmd := range newWebhookCmd(client).Commands() {
-				cmd.AddCommand(subcmd)
-			}
-		}
-	}
+	// Add command groups with client
+	rootCmd.AddCommand(newTenantCmd(client))
+	rootCmd.AddCommand(newWebhookCmd(client))
 
 	return rootCmd.Execute()
 }

@@ -67,7 +67,3 @@ func newWebhookCmd(client api.Client) *cobra.Command {
 
 	return cmd
 }
-
-func init() {
-	rootCmd.AddCommand(newWebhookCmd(nil))
-}

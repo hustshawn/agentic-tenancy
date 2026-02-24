@@ -1,5 +1,8 @@
 # Agentic Tenancy
 
+[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](CHANGELOG.md)
+[![Go](https://img.shields.io/badge/go-1.24-00ADD8.svg)](go.mod)
+
 Multi-tenant lifecycle management platform for AI agents on AWS EKS. Each tenant gets an isolated [Kata Containers](https://katacontainers.io/) pod running a [ZeroClaw](https://github.com/hustshawn/zeroclaw) agent instance with VM-level isolation, S3-backed session persistence, and automatic idle timeout. The system manages wake-on-demand, warm pool pre-provisioning, and distributed HA coordination so individual agents appear always-on to end users while consuming zero resources when idle.
 
 > Status: **Working** — Tested on EKS with Karpenter + Kata Containers

@@ -21,8 +21,3 @@ func newTenantCmd(client api.Client) *cobra.Command {
 
 	return cmd
 }
-
-func init() {
-	// Client will be initialized in root.go based on flags
-	rootCmd.AddCommand(newTenantCmd(nil))
-}
