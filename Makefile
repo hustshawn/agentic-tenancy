@@ -2,9 +2,9 @@ BINARY_DIR := bin
 ORCHESTRATOR_BIN := $(BINARY_DIR)/orchestrator
 ROUTER_BIN := $(BINARY_DIR)/router
 
-.PHONY: all build test test-unit test-integration vet lint clean docker-build
+.PHONY: all build test test-unit test-integration vet lint clean docker-build ztm install-ztm ztm-release test-cli
 
-all: build
+all: build ztm
 
 ## build: compile both binaries
 build:
@@ -58,3 +58,40 @@ run-router: build
 
 help:
 	@grep -E '^## ' Makefile | sed 's/## //'
+
+ZTM_BIN := $(BINARY_DIR)/ztm
+VERSION := v0.1.0
+COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS := -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)"
+
+## ztm: build CLI binary
+ztm:
+	@mkdir -p $(BINARY_DIR)
+	go build $(LDFLAGS) -o $(ZTM_BIN) ./cmd/ztm
+	@echo "✅ Built: $(ZTM_BIN)"
+
+## install-ztm: install CLI to $GOPATH/bin or /usr/local/bin
+install-ztm: ztm
+	@if [ -n "$(GOPATH)" ]; then \
+		mkdir -p $(GOPATH)/bin && \
+		cp $(ZTM_BIN) $(GOPATH)/bin/ztm && \
+		echo "✅ Installed to $(GOPATH)/bin/ztm"; \
+	else \
+		sudo cp $(ZTM_BIN) /usr/local/bin/ztm && \
+		echo "✅ Installed to /usr/local/bin/ztm"; \
+	fi
+
+## ztm-release: build multi-platform binaries
+ztm-release:
+	@mkdir -p $(BINARY_DIR)/release
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY_DIR)/release/ztm-darwin-amd64 ./cmd/ztm
+	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BINARY_DIR)/release/ztm-darwin-arm64 ./cmd/ztm
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY_DIR)/release/ztm-linux-amd64 ./cmd/ztm
+	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BINARY_DIR)/release/ztm-linux-arm64 ./cmd/ztm
+	@echo "✅ Release binaries built in $(BINARY_DIR)/release/"
+	@ls -lh $(BINARY_DIR)/release/
+
+## test-cli: run CLI tests
+test-cli:
+	go test ./cmd/ztm/... ./internal/cli/... -v -timeout 30s
