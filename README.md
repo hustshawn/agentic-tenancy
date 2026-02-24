@@ -71,27 +71,51 @@ zeroclaw-{tenantID} Pod (kata-qemu, amd64 metal)
 
 ### Deploy
 
+> **Important**: Before deploying, you must replace placeholders in the manifest files. See [deploy/README.md](deploy/README.md) for detailed configuration instructions.
+
 ```bash
 # 1. Build and push all images
 ./scripts/build-and-deploy.sh all
 
-# 2. Apply Karpenter NodePool + EC2NodeClass
-kubectl apply -f deploy/02-karpenter.yaml
+# 2. Configure deployment manifests (replace placeholders)
+# See deploy/README.md for detailed instructions
+export AWS_ACCOUNT_ID="123456789012"
+export AWS_REGION="us-west-2"
+export YOUR_ROUTER_DOMAIN="router.example.com"
+export EKS_CLUSTER_NAME="my-eks-cluster"
 
-# 3. Deploy orchestrator + router
-kubectl apply -f deploy/01-orchestrator.yaml
+# Option A: Use envsubst to generate configured manifests
+envsubst < deploy/01-orchestrator.yaml > /tmp/01-orchestrator-configured.yaml
+envsubst < deploy/02-karpenter.yaml > /tmp/02-karpenter-configured.yaml
 
-# 4. Verify health
+# Option B: Edit files directly (see deploy/README.md)
+
+# 3. Apply prerequisites
+kubectl apply -f deploy/00-prerequisites.yaml
+
+# 4. Create Redis secret
+kubectl create secret generic orchestrator-config \
+  --namespace=tenants \
+  --from-literal=redis-addr='redis.tenants.svc.cluster.local:6379'
+
+# 5. Apply Karpenter NodePool + EC2NodeClass
+kubectl apply -f /tmp/02-karpenter-configured.yaml
+
+# 6. Deploy orchestrator + router
+kubectl apply -f /tmp/01-orchestrator-configured.yaml
+
+# 7. Verify health
+kubectl -n tenants get pods
 kubectl -n tenants logs deployment/orchestrator --tail=20
 kubectl -n tenants logs deployment/router --tail=20
 
-# 5. Create your first tenant
-./scripts/ztm.sh tenant create alice "<BOT_TOKEN>" --idle-timeout 3600
+# 8. Create your first tenant
+ztm tenant create alice "<BOT_TOKEN>" --idle-timeout 3600
 
-# 6. Register Telegram webhook
-./scripts/ztm.sh webhook register alice
+# 9. Register Telegram webhook
+ztm webhook register alice
 
-# 7. Send a message to @YourBot on Telegram — it should wake and reply
+# 10. Send a message to @YourBot on Telegram — it should wake and reply
 ```
 
 ---
