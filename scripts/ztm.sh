@@ -33,6 +33,16 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# ── Deprecation Notice ────────────────────────────────────────────────────────
+cat >&2 <<EOF
+${YELLOW}⚠ DEPRECATION NOTICE:${NC}
+This bash-based CLI is deprecated and will be removed in v1.0.0.
+Please migrate to the Go binary: ${CYAN}make install-ztm${NC}
+
+See docs/cli-migration.md for migration guide.
+
+EOF
+
 info()    { echo -e "${CYAN}ℹ${NC}  $*"; }
 success() { echo -e "${GREEN}✓${NC}  $*"; }
 warn()    { echo -e "${YELLOW}⚠${NC}  $*"; }
